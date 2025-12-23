@@ -26,7 +26,6 @@ const showResultMessage = message => {
 };
 
 const checkForPalindrome = rawInput => {
-  const originalInput = rawInput; // Preserve for output
   const input = rawInput.trim();
 
   if (!input) {
@@ -34,7 +33,7 @@ const checkForPalindrome = rawInput => {
     return;
   }
 
-  const resultMsg = `${originalInput} ${
+  const resultMsg = `${input} ${
     isPalindrome(input) ? 'is' : 'is not'
   } a palindrome.`;
 
