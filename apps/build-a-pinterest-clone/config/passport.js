@@ -51,6 +51,10 @@ module.exports = function (passport) {
               newUser.github.username = profile.username;
               newUser.github.displayName = profile.displayName;
               newUser.github.imageUrl = profile.photos[0].value;
+              // Capture the primary email from GitHub when available
+              if (profile.emails && profile.emails.length > 0 && profile.emails[0].value) {
+                newUser.email = profile.emails[0].value;
+              }
 
               newUser.save(function (err) {
                 if (err) {

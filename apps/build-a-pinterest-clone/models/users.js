@@ -8,15 +8,14 @@ var User = new Schema({
     id: String,
     displayName: String,
     username: String,
-    imageUrl: String,
-    // Primary contact email for the user with basic format validation
-    email: {
-      type: String,
-      required: true,
-      trim: true,
-      lowercase: true,
-      match: [/^[^\s@]+@[^\s@]+\.[^\s@]+$/, 'Please fill a valid email address']
-    }
+    imageUrl: String
+  },
+  email: {
+    type: String,
+    required: false,
+    trim: true,
+    lowercase: true,
+    match: [/^[^\s@]+@[^\s@]+\.[^\s@]+$/, 'Please fill a valid email address']
   }
 });
 
