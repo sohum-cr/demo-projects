@@ -9,6 +9,13 @@ var User = new Schema({
     displayName: String,
     username: String,
     imageUrl: String
+  },
+  email: {
+    type: String,
+    required: false,
+    trim: true,
+    lowercase: true,
+    match: [/^[^\s@]+@[^\s@]+\.[^\s@]+$/, 'Please fill a valid email address']
   }
 });
 

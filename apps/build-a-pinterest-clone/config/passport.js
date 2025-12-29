@@ -4,6 +4,16 @@ var GitHubStrategy = require('passport-github').Strategy;
 var User = require('../models/users');
 var configAuth = require('./auth');
 
+// Placeholder consent check. Wire this to your real consent flow (UI or API)
+// and persist consent metadata alongside the user record to satisfy GDPR/CCPA.
+function hasUserEmailConsent(profile) {
+  return (
+    profile &&
+    ((profile._consent && profile._consent.email === true) ||
+      profile.emailConsent === true)
+  );
+}
+
 function updatePictureIfChanged(profile, user, done) {
   if (profile.photos[0].value === user.github.imageUrl) return done(null, user);
   else {
@@ -33,7 +43,8 @@ module.exports = function (passport) {
       {
         clientID: configAuth.githubAuth.clientID,
         clientSecret: configAuth.githubAuth.clientSecret,
-        callbackURL: configAuth.githubAuth.callbackURL
+        callbackURL: configAuth.githubAuth.callbackURL,
+        scope: ['user:email']
       },
       function (token, refreshToken, profile, done) {
         process.nextTick(function () {
@@ -51,6 +62,18 @@ module.exports = function (passport) {
               newUser.github.username = profile.username;
               newUser.github.displayName = profile.displayName;
               newUser.github.imageUrl = profile.photos[0].value;
+              // Capture verified primary email from GitHub only when consent is recorded
+              var primaryEmail =
+                profile.emails && profile.emails.length > 0 ? profile.emails[0] : null;
+              if (
+                primaryEmail &&
+                primaryEmail.value &&
+                primaryEmail.verified === true &&
+                hasUserEmailConsent(profile)
+              ) {
+                newUser.email = primaryEmail.value;
+                // TODO: persist consent metadata with the user record
+              }
 
               newUser.save(function (err) {
                 if (err) {
