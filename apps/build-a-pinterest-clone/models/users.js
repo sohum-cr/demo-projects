@@ -16,7 +16,10 @@ var User = new Schema({
     trim: true,
     lowercase: true,
     match: [/^[^\s@]+@[^\s@]+\.[^\s@]+$/, 'Please fill a valid email address']
-  }
+  },
+  emailConsentDate: Date,
+  emailConsentIP: String,
+  emailConsentVersion: String
 });
 
 module.exports = mongoose.model('User', User);
