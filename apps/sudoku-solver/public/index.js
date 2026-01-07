@@ -46,10 +46,21 @@ async function getSolved() {
 }
 
 async function getChecked() {
+  // Validate that required fields are filled
+  const missingFields = [];
+  if (!textArea.value.trim()) missingFields.push('puzzle');
+  if (!coordInput.value.trim()) missingFields.push('coordinate');
+  if (!valInput.value.trim()) missingFields.push('value');
+  
+  if (missingFields.length > 0) {
+    errorMsg.innerHTML = `<code>${JSON.stringify({ error: 'Required field(s) missing', missing: missingFields }, null, 2)}</code>`;
+    return;
+  }
+
   const stuff = {
-    puzzle: textArea.value,
-    coordinate: coordInput.value,
-    value: valInput.value
+    puzzle: textArea.value.trim(),
+    coordinate: coordInput.value.trim(),
+    value: valInput.value.trim()
   };
   const data = await fetch('/api/check', {
     method: 'POST',
