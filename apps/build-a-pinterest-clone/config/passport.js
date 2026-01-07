@@ -4,14 +4,9 @@ var GitHubStrategy = require('passport-github').Strategy;
 var User = require('../models/users');
 var configAuth = require('./auth');
 
-// Placeholder consent check. Wire this to your real consent flow (UI or API)
-// and persist consent metadata alongside the user record to satisfy GDPR/CCPA.
+// Helper to check if user consented to email collection in the current session
 function hasUserEmailConsent(profile) {
-  return (
-    profile &&
-    ((profile._consent && profile._consent.email === true) ||
-      profile.emailConsent === true)
-  );
+  return req.session && req.session.emailConsent === true;
 }
 
 function updatePictureIfChanged(profile, user, done) {
@@ -44,7 +39,8 @@ module.exports = function (passport) {
         clientID: configAuth.githubAuth.clientID,
         clientSecret: configAuth.githubAuth.clientSecret,
         callbackURL: configAuth.githubAuth.callbackURL,
-        scope: ['user:email']
+        scope: ['user:email'],
+        passReqToCallback: true
       },
       function (token, refreshToken, profile, done) {
         process.nextTick(function () {
