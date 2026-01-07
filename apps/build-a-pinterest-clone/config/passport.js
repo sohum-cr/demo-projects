@@ -6,7 +6,7 @@ var configAuth = require('./auth');
 
 // Helper to check if user consented to email collection in the current session
 function hasUserEmailConsent(profile) {
-  return req.session && req.session.emailConsent === true;
+  return req && req.session && req.session.emailConsent === true;
 }
 
 function updatePictureIfChanged(profile, user, done) {
@@ -65,9 +65,11 @@ module.exports = function (passport) {
                 primaryEmail &&
                 primaryEmail.value &&
                 primaryEmail.verified === true &&
-                hasUserEmailConsent(profile)
+                hasUserEmailConsent(req)
               ) {
                 newUser.email = primaryEmail.value;
+                newUser.emailConsent = new Date();
+                newUser.emailConsentIP = req.ip;
                 // TODO: persist consent metadata with the user record
               }
 
