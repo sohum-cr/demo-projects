@@ -18,7 +18,12 @@ module.exports = function (app) {
   });
 
   app.route('/api/check').post((req, res) => {
-    if (!req.body.puzzle || !req.body.coordinate || !req.body.value) {
+    const missingFields = [];
+    if (!req.body.puzzle) missingFields.push('puzzle');
+    if (!req.body.coordinate) missingFields.push('coordinate');
+    if (!req.body.value) missingFields.push('value');
+    
+    if (missingFields.length > 0) {
       return res.json({ error: 'Required field(s) missing' });
     }
 
