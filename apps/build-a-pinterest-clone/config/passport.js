@@ -42,7 +42,7 @@ module.exports = function (passport) {
         scope: ['user:email'],
         passReqToCallback: true
       },
-      function (token, refreshToken, profile, done) {
+      function (req, accessToken, refreshToken, profile, done) {
         process.nextTick(function () {
           User.findOne({ 'github.id': profile.id }, function (err, user) {
             if (err) {
