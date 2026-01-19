@@ -63,9 +63,9 @@ module.exports = function (passport) {
                 hasUserEmailConsent(req)
               ) {
                 newUser.email = primaryEmail.value;
-                newUser.emailConsent = new Date();
+                newUser.emailConsentDate = new Date();
                 newUser.emailConsentIP = req.ip;
-                // TODO: persist consent metadata with the user record
+                newUser.emailConsentVersion = '1.0';
               }
 
               newUser.save(function (err) {
