@@ -1,4 +1,11 @@
 'use strict';
+
+var GitHubStrategy = require('passport-github').Strategy;
+var User = require('../models/users');
+var configAuth = require('./auth');
+
+var EMAIL_CONSENT_VERSION = process.env.EMAIL_CONSENT_VERSION || '1.0';
+
 // Helper to check if user consented to email collection in the current session
 function hasUserEmailConsent(req) {
   return req && req.session && req.session.emailConsent === true;
@@ -65,7 +72,7 @@ module.exports = function (passport) {
                 newUser.email = primaryEmail.value;
                 newUser.emailConsentDate = new Date();
                 newUser.emailConsentIP = req.ip;
-                newUser.emailConsentVersion = '1.0';
+                newUser.emailConsentVersion = EMAIL_CONSENT_VERSION;
               }
 
               newUser.save(function (err) {
