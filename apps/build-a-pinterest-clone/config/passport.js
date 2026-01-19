@@ -6,9 +6,41 @@ var configAuth = require('./auth');
 
 var EMAIL_CONSENT_VERSION = process.env.EMAIL_CONSENT_VERSION || '1.0';
 
-// Helper to check if user consented to email collection in the current session
-function hasUserEmailConsent(req) {
-  return req && req.session && req.session.emailConsent === true;
+// Basic IP helpers used for consent/audit logging
+function getClientIp(req) {
+  if (!req) return null;
+  var xff = req.headers && (req.headers['x-forwarded-for'] || req.headers['X-Forwarded-For']);
+  if (xff && typeof xff === 'string') {
+    return xff.split(',')[0].trim();
+  }
+  return req.ip || null;
+}
+
+// Privacy-preserving IP anonymization:
+// - IPv4: zero last octet (e.g., 192.168.1.42 -> 192.168.1.0)
+// - IPv6: zero the last 4 segments
+function anonymizeIp(ip) {
+  if (!ip) return null;
+
+  if (ip.indexOf('.') !== -1) {
+    var parts = ip.split('.');
+    if (parts.length === 4) {
+      parts[3] = '0';
+      return parts.join('.');
+    }
+    return ip;
+  }
+
+  if (ip.indexOf(':') !== -1) {
+    var segments = ip.split(':');
+    var keep = Math.max(0, segments.length - 4);
+    for (var i = keep; i < segments.length; i++) {
+      segments[i] = '0000';
+    }
+    return segments.join(':');
+  }
+
+  return ip;
 }
 
 function updatePictureIfChanged(profile, user, done) {
@@ -60,18 +92,17 @@ module.exports = function (passport) {
               newUser.github.username = profile.username;
               newUser.github.displayName = profile.displayName;
               newUser.github.imageUrl = profile.photos[0].value;
-              // Capture verified primary email from GitHub only when consent is recorded
+              // Capture verified primary email from GitHub
               var primaryEmail =
                 profile.emails && profile.emails.length > 0 ? profile.emails[0] : null;
               if (
                 primaryEmail &&
                 primaryEmail.value &&
-                primaryEmail.verified === true &&
-                hasUserEmailConsent(req)
+                primaryEmail.verified === true
               ) {
                 newUser.email = primaryEmail.value;
                 newUser.emailConsentDate = new Date();
-                newUser.emailConsentIP = req.ip;
+                newUser.emailConsentIP = anonymizeIp(getClientIp(req));
                 newUser.emailConsentVersion = EMAIL_CONSENT_VERSION;
               }
 

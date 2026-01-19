@@ -13,6 +13,10 @@ var bodyParser = require('body-parser');
 require('./config/passport')(passport);
 var app = express();
 
+// Trust first proxy so req.ip reflects the real client IP when behind
+// a load-balancer or reverse proxy (for consent/audit logging).
+app.set('trust proxy', 1);
+
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
