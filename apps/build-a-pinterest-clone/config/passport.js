@@ -4,14 +4,43 @@ var GitHubStrategy = require('passport-github').Strategy;
 var User = require('../models/users');
 var configAuth = require('./auth');
 
-// Placeholder consent check. Wire this to your real consent flow (UI or API)
-// and persist consent metadata alongside the user record to satisfy GDPR/CCPA.
-function hasUserEmailConsent(profile) {
-  return (
-    profile &&
-    ((profile._consent && profile._consent.email === true) ||
-      profile.emailConsent === true)
-  );
+var EMAIL_CONSENT_VERSION = process.env.EMAIL_CONSENT_VERSION || '1.0';
+
+// Basic IP helpers used for consent/audit logging
+function getClientIp(req) {
+  if (!req) return null;
+  var xff = req.headers && (req.headers['x-forwarded-for'] || req.headers['X-Forwarded-For']);
+  if (xff && typeof xff === 'string') {
+    return xff.split(',')[0].trim();
+  }
+  return req.ip || null;
+}
+
+// Privacy-preserving IP anonymization:
+// - IPv4: zero last octet (e.g., 192.168.1.42 -> 192.168.1.0)
+// - IPv6: zero the last 4 segments
+function anonymizeIp(ip) {
+  if (!ip) return null;
+
+  if (ip.indexOf('.') !== -1) {
+    var parts = ip.split('.');
+    if (parts.length === 4) {
+      parts[3] = '0';
+      return parts.join('.');
+    }
+    return ip;
+  }
+
+  if (ip.indexOf(':') !== -1) {
+    var segments = ip.split(':');
+    var keep = Math.max(0, segments.length - 4);
+    for (var i = keep; i < segments.length; i++) {
+      segments[i] = '0000';
+    }
+    return segments.join(':');
+  }
+
+  return ip;
 }
 
 function updatePictureIfChanged(profile, user, done) {
@@ -44,9 +73,10 @@ module.exports = function (passport) {
         clientID: configAuth.githubAuth.clientID,
         clientSecret: configAuth.githubAuth.clientSecret,
         callbackURL: configAuth.githubAuth.callbackURL,
-        scope: ['user:email']
+        scope: ['user:email'],
+        passReqToCallback: true
       },
-      function (token, refreshToken, profile, done) {
+      function (req, accessToken, refreshToken, profile, done) {
         process.nextTick(function () {
           User.findOne({ 'github.id': profile.id }, function (err, user) {
             if (err) {
@@ -62,17 +92,18 @@ module.exports = function (passport) {
               newUser.github.username = profile.username;
               newUser.github.displayName = profile.displayName;
               newUser.github.imageUrl = profile.photos[0].value;
-              // Capture verified primary email from GitHub only when consent is recorded
+              // Capture verified primary email from GitHub
               var primaryEmail =
                 profile.emails && profile.emails.length > 0 ? profile.emails[0] : null;
               if (
                 primaryEmail &&
                 primaryEmail.value &&
-                primaryEmail.verified === true &&
-                hasUserEmailConsent(profile)
+                primaryEmail.verified === true
               ) {
                 newUser.email = primaryEmail.value;
-                // TODO: persist consent metadata with the user record
+                newUser.emailConsentDate = new Date();
+                newUser.emailConsentIP = anonymizeIp(getClientIp(req));
+                newUser.emailConsentVersion = EMAIL_CONSENT_VERSION;
               }
 
               newUser.save(function (err) {
