@@ -17,6 +17,7 @@ const isOperator = /[x/+-]/,
   endsWithNegativeSign = /\d[x/+-]{1}-$/,
   clearStyle = { background: '#ac3939' },
   operatorStyle = { background: '#666666' },
+  trigStyle = { background: '#336699' },
   equalsStyle = {
     background: '#004466',
     position: 'absolute',
@@ -41,6 +42,7 @@ class Calculator extends React.Component {
     this.initialize = this.initialize.bind(this);
     this.handleDecimal = this.handleDecimal.bind(this);
     this.handleNumbers = this.handleNumbers.bind(this);
+    this.handleTrig = this.handleTrig.bind(this);
   }
 
   maxDigitWarning() {
@@ -166,6 +168,35 @@ class Calculator extends React.Component {
     }
   }
 
+  handleTrig(e) {
+    if (!this.state.currentVal.includes('Limit')) {
+      const value = parseFloat(this.state.currentVal);
+      if (isNaN(value)) return;
+      const fn = e.target.value;
+      let result;
+      switch (fn) {
+        case 'sin':
+          result = Math.sin(value);
+          break;
+        case 'cos':
+          result = Math.cos(value);
+          break;
+        case 'tan':
+          result = Math.tan(value);
+          break;
+        default:
+          return;
+      }
+      result = Math.round(1000000000000 * result) / 1000000000000;
+      this.setState({
+        currentVal: result.toString(),
+        formula: fn + '(' + this.state.currentVal + ')=' + result,
+        prevVal: result,
+        evaluated: true
+      });
+    }
+  }
+
   initialize() {
     this.setState({
       currentVal: '0',
@@ -189,6 +220,7 @@ class Calculator extends React.Component {
             initialize={this.initialize}
             numbers={this.handleNumbers}
             operators={this.handleOperators}
+            trig={this.handleTrig}
           />
         </div>
         <div className='author'>
@@ -211,6 +243,30 @@ class Buttons extends React.Component {
   render() {
     return (
       <div>
+        <button
+          id='sin'
+          onClick={this.props.trig}
+          style={trigStyle}
+          value='sin'
+        >
+          sin
+        </button>
+        <button
+          id='cos'
+          onClick={this.props.trig}
+          style={trigStyle}
+          value='cos'
+        >
+          cos
+        </button>
+        <button
+          id='tan'
+          onClick={this.props.trig}
+          style={trigStyle}
+          value='tan'
+        >
+          tan
+        </button>
         <button
           className='jumbo'
           id='clear'
